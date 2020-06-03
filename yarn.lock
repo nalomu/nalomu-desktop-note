@@ -789,10 +789,10 @@ isbinaryfile@^4.0.4:
   resolved "https://registry.npm.taobao.org/isbinaryfile/download/isbinaryfile-4.0.5.tgz#7193454fdd7fc0b12855c36c48d4ac7368fa3ec9"
   integrity sha1-cZNFT91/wLEoVcNsSNSsc2j6Psk=
 
-jquery@^3.4.1:
-  version "3.4.1"
-  resolved "https://registry.npm.taobao.org/jquery/download/jquery-3.4.1.tgz#714f1f8d9dde4bdfa55764ba37ef214630d80ef2"
-  integrity sha1-cU8fjZ3eS9+lV2S6N+8hRjDYDvI=
+jquery@^3.5.0:
+  version "3.5.1"
+  resolved "https://registry.npm.taobao.org/jquery/download/jquery-3.5.1.tgz#d7b4d08e1bfdb86ad2f1a3d039ea17304717abb5"
+  integrity sha1-17TQjhv9uGrS8aPQOeoXMEcXq7U=
 
 js-yaml@^3.13.1:
   version "3.13.1"

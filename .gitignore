@@ -5,8 +5,11 @@
 .tags*
 .vs/
 .vscode/
+
 .idea/
 build/
+
+
 *.log
 *.pyc
 *.sln

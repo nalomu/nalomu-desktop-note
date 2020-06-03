@@ -165,10 +165,6 @@ $(function() {
     const styles = objectMap(arg.index, (v, k) => [toDash(k), v])
     const styleTag = toStyleTag({ 'div.container#container': styles })
     $('#container-style').html(styleTag.html())
-    // for (let key in arg.index) {
-    //   console.log(key)
-    //   container.style[key] = arg.index[key]
-    // }
   })
   BalloonEditor
     .create(document.querySelector('.container'))
