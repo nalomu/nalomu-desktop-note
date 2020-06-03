@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>setting</title>
+  <link rel="stylesheet" href="node_modules/@simonwep/pickr/dist/themes/classic.min.css" /> <!-- 'classic' theme -->
+  <!--    <script src="node_modules/@simonwep/pickr/dist/pickr.min.js"></script>-->
+
+  <style>
+  * {
+    box-sizing: border-box;
+  }
+
+  .input {
+    outline-style: none;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    padding: 13px 14px;
+    width: 100%;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: "Microsoft soft", sans-serif;
+  }
+
+  .input:focus {
+    border-color: #66afe9;
+    outline: 0;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+    box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6)
+  }
+
+  button { /* 按钮美化 */
+    width: 270px; /* 宽度 */
+    height: 40px; /* 高度 */
+    border-width: 0px; /* 边框宽度 */
+    border-radius: 3px; /* 边框半径 */
+    background: #1E90FF; /* 背景颜色 */
+    cursor: pointer; /* 鼠标移入按钮范围时出现手势 */
+    outline: none; /* 不显示轮廓线 */
+    font-family: Microsoft YaHei, sans-serif; /* 设置字体 */
+    color: white; /* 字体颜色 */
+    font-size: 17px; /* 字体大小 */
+    /*border: 1px solid #555;*/
+  }
+
+  button:hover { /* 鼠标移入按钮范围时改变颜色 */
+    /*background: #5599FF;*/
+  }
+
+  .form-group {
+    margin-top: 10px;
+  }
+
+  .form-group > label, .form-group > div {
+    /*display: inline-block;*/
+    float: left;
+  }
+
+  .form-group > label {
+    width: 20%;
+    text-align: right;
+    padding: 13px 14px;
+  }
+
+  .check-align :first-child {
+    border-bottom-left-radius: 5px;
+    border-top-left-radius: 5px;
+  }
+
+  .check-align :last-child {
+    border-bottom-right-radius: 5px;
+    border-top-right-radius: 5px;
+  }
+
+  .check-align > label {
+    /*border: 1px solid #eee;*/
+    background: #ccc;
+    height: 36px;
+    padding: 2px;
+    display: inline-block;
+    float: left;
+  }
+
+  .form-group > div {
+    width: 80%;
+  }
+
+  .form-group::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+
+  .check-align::after {
+    content: '';
+    display: block;
+    clear: both;
+  }
+
+  .check-align > label.checked {
+    background: #999;
+  }
+  </style>
+</head>
+<body>
+<button id="background"> 选择背景颜色</button>
+<button id="foreground"> 选择前景颜色</button>
+<div class="form-group">
+  <label for="fontsize">字体大小</label>
+  <div>
+    <input id="fontsize" class="input" type="number">
+  </div>
+</div>
+<div class="form-group">
+  <label for="lineHeight">行高</label>
+  <div>
+    <input id="lineHeight" class="input" type="number">
+  </div>
+</div>
+<div class="form-group">
+  <label for="padding">内间距</label>
+  <div>
+    <input id="padding" class="input" type="number">
+  </div>
+</div>
+<div class="form-group">
+  <label>文字方向</label>
+  <div class="check-align">
+    <label>
+      <svg
+        t="1585200580973" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+        p-id="3229" width="32" height="32"
+      >
+        <path
+          d="M690.916 273.445c0 16.308-13.512 29.819-29.819 29.819L124.349 303.264c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l536.748 0c16.308 0 29.819 13.512 29.819 29.819L690.916 273.445zM869.832 452.361c0 16.308-13.512 29.819-29.819 29.819L124.349 482.18c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l715.664 0c16.308 0 29.819 13.512 29.819 29.819L869.832 452.361zM750.555 631.277c0 16.308-13.512 29.819-29.819 29.819L124.349 661.096c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l596.387 0c16.308 0 29.819 13.512 29.819 29.819L750.555 631.277zM929.471 810.193c0 16.308-13.512 29.819-29.819 29.819L124.349 840.012c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l775.303 0c16.308 0 29.819 13.512 29.819 29.819L929.471 810.193z"
+          p-id="3230"
+        ></path>
+      </svg>
+      <input hidden type="radio" id="align-left" name="align" value="left">
+      <!--            左对齐-->
+    </label>
+    <label>
+      <svg
+        t="1585200688599" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+        p-id="3480" width="32" height="32"
+      >
+        <path
+          d="M929.471 810.193c0 16.308-13.512 29.819-29.819 29.819L124.349 840.012c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l775.303 0c16.308 0 29.819 13.512 29.819 29.819L929.471 810.193zM869.832 452.361c0 16.308-13.512 29.819-29.819 29.819L183.987 482.18c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l656.025 0c16.308 0 29.819 13.512 29.819 29.819L869.831 452.361zM750.555 631.277c0 16.308-13.512 29.819-29.819 29.819L303.265 661.096c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l417.471 0c16.308 0 29.819 13.512 29.819 29.819L750.555 631.277zM690.916 273.445c0 16.308-13.512 29.819-29.819 29.819L362.903 303.264c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l298.193 0c16.308 0 29.819 13.512 29.819 29.819L690.915 273.445z"
+          p-id="3481"
+        ></path>
+      </svg>
+      <input hidden type="radio" id="align-center" name="align" value="center">
+      <!--            居中-->
+    </label>
+    <label>
+      <svg
+        t="1585200706733" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+        p-id="3603" width="32" height="32"
+      >
+        <path
+          d="M929.471 810.193c0 16.308-13.512 29.819-29.819 29.819L124.349 840.012c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l775.303 0c16.308 0 29.819 13.512 29.819 29.819L929.471 810.193zM929.471 452.361c0 16.308-13.512 29.819-29.819 29.819L183.987 482.18c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l715.664 0c16.308 0 29.819 13.512 29.819 29.819L929.47 452.361zM929.471 631.277c0 16.308-13.512 29.819-29.819 29.819L303.265 661.096c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l596.387 0c16.308 0 29.819 13.512 29.819 29.819L929.471 631.277zM929.471 273.445c0 16.308-13.512 29.819-29.819 29.819L362.903 303.264c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l536.748 0c16.308 0 29.819 13.512 29.819 29.819L929.47 273.445z"
+          p-id="3604"
+        ></path>
+      </svg>
+      <input hidden type="radio" id="align-right" name="align" value="right">
+      <!--            右对齐-->
+    </label>
+    <label>
+      <svg
+        t="1585200729508" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
+        p-id="3726" width="32" height="32"
+      >
+        <path
+          d="M929.471 273.445c0 16.308-13.512 29.819-29.819 29.819L124.349 303.264c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l775.303 0c16.308 0 29.819 13.512 29.819 29.819L929.471 273.445zM929.471 452.361c0 16.308-13.512 29.819-29.819 29.819L124.349 482.18c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l775.303 0c16.308 0 29.819 13.512 29.819 29.819L929.471 452.361zM929.471 631.277c0 16.308-13.512 29.819-29.819 29.819L124.349 661.096c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l775.303 0c16.308 0 29.819 13.512 29.819 29.819L929.471 631.277zM929.471 810.193c0 16.308-13.512 29.819-29.819 29.819L124.349 840.012c-16.308 0-29.819-13.512-29.819-29.819l0-59.639c0-16.308 13.512-29.819 29.819-29.819l775.303 0c16.308 0 29.819 13.512 29.819 29.819L929.471 810.193z"
+          p-id="3727"
+        ></path>
+      </svg>
+      <input hidden type="radio" id="align-justify" name="align" value="justify">
+      <!--            两端-->
+    </label>
+  </div>
+</div>
+<div class="form-group">
+  <label for="alwaysOnTop">置顶</label>
+  <div><input type="checkbox" id="alwaysOnTop"></div>
+</div>
+<div class="color-picker"></div>
+<button id="save">保存更改</button>
+<script>
+const $ = require('jquery')
+const Pickr = require('@simonwep/pickr')
+$(function() {
+  let config = Object.assign(window.config, {})
+  $('head').append(`<link rel="icon" href="${window.assetsPath}/favicon.ico">`)
+
+  // Simple example, see optional options for more configuration.
+  // import '@simonwep/pickr/dist/themes/classic.min.css';   // 'classic' theme
+  // import Pickr from "@simonwep/pickr"
+  let { ipcRenderer } = require('electron')
+  let onselect = null
+  let background = document.querySelector('#background')
+  let foreground = document.querySelector('#foreground')
+  let fontsize = document.querySelector('#fontsize')
+  let lineHeight = document.querySelector('#lineHeight')
+  let padding = document.querySelector('#padding')
+  let alwaysOnTop = document.querySelector('#alwaysOnTop')
+  let textAlign = document.querySelectorAll('input[name=align]')
+  fontsize.setAttribute('value', config.index.fontSize.replace('px', ''))
+  lineHeight.setAttribute('value', config.index.lineHeight)
+  padding.setAttribute('value', config.index.padding.replace('px', ''))
+  if (config.alwaysOnTop) {
+    alwaysOnTop.setAttribute('checked', 'true')
+  }
+  textAlign.forEach(function(value) {
+    if (value.value === config.index['textAlign']) {
+      value.setAttribute('checked', 'true')
+      $(value).parent().addClass('checked')
+    }
+    value.onchange = function() {
+      config.index['textAlign'] = this.value
+      $('input[name=align]').parent().removeClass('checked')
+      $(this).parent().addClass('checked')
+    }
+  })
+  lineHeight.onchange = e => {
+    config.index['lineHeight'] = e.target.value
+  }
+  padding.onchange = e => {
+    config.index['padding'] = `${e.target.value}px`
+  }
+  fontsize.onchange = e => {
+    config.index['fontSize'] = `${e.target.value}px`
+  }
+  alwaysOnTop.onchange = function() {
+    console.log(this.checked)
+    // ipcRenderer.send('switch-top', this.checked)
+    config.alwaysOnTop = this.checked
+  }
+  const pickr = Pickr.create({
+    el: '.color-picker',
+    theme: 'classic', // or 'monolith', or 'nano'
+    swatches: [
+      'rgba(244, 67, 54, 1)',
+      'rgba(233, 30, 99, 0.95)',
+      'rgba(156, 39, 176, 0.9)',
+      'rgba(103, 58, 183, 0.85)',
+      'rgba(63, 81, 181, 0.8)',
+      'rgba(33, 150, 243, 0.75)',
+      'rgba(3, 169, 244, 0.7)',
+      'rgba(0, 188, 212, 0.7)',
+      'rgba(0, 150, 136, 0.75)',
+      'rgba(76, 175, 80, 0.8)',
+      'rgba(139, 195, 74, 0.85)',
+      'rgba(205, 220, 57, 0.9)',
+      'rgba(255, 235, 59, 0.95)',
+      'rgba(255, 193, 7, 1)'
+    ],
+
+    components: {
+
+      // Main components
+      preview: true,
+      opacity: true,
+      hue: true,
+
+      // Input / output Options
+      interaction: {
+        hex: true,
+        rgba: true,
+        hsla: true,
+        hsva: true,
+        cmyk: true,
+        input: true,
+        clear: true,
+        save: true
+      }
+    }
+  })
+  background.onclick = function() {
+    console.log(onselect)
+    pickr.setColor(config.index.background)
+    onselect = 'background'
+    pickr.show()
+  }
+  foreground.onclick = function() {
+    console.log(onselect)
+    pickr.setColor(config.index.color)
+    onselect = 'color'
+    pickr.show()
+  }
+  pickr.on('save', () => {
+    if (onselect === null) {
+      pickr.hide()
+      return
+    }
+    let color = pickr.getColor().toRGBA()
+    config.index[onselect] = `rgba(${color[0]},${color[1]},${color[2]},${color[3]})`
+    console.log(config.index)
+    pickr.hide()
+  })
+  let saveButton = document.getElementById('save')
+  saveButton.onclick = () => {
+    ipcRenderer.send('config-change', config)
+    ipcRenderer.on('config-change-reply', () => {
+      window.close()
+    })
+  }
+
+})
+</script>
+</body>
+</html>

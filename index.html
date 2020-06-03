@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>desktop note</title>
+  <style>
+  html, body, .container, .editable {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  html, body {
+    padding: 0;
+    margin: 0;
+    background: #0000;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  div.container#container {
+    background: #333;
+    color: #ccc;
+    width: 100%;
+    height: 100%;
+    padding: 0px;
+    font-size: 18px;
+    line-height: 1.4;
+    overflow: hidden;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+  }
+
+  .cant-select {
+    -webkit-touch-callout: none;
+    -moz-user-select: none; /*火狐*/
+    -webkit-user-select: none; /*webkit浏览器*/
+    -ms-user-select: none; /*IE10*/
+    -khtml-user-select: none; /*早期浏览器*/
+    user-select: none;
+  }
+
+  .container:empty::before {
+    content: attr(data-placeholder);
+    color: #999;
+  }
+  </style>
+
+</head>
+<body>
+<div class="container" id="container" data-placeholder="单击此处输入文本">
+</div>
+<!--<script src="node_modules/@ckeditor/ckeditor5-build-balloon/"></script>-->
+<script>
+const { ipcRenderer } = require('electron')
+const $ = require('jquery')
+const BalloonEditor = require('@ckeditor/ckeditor5-build-balloon')
+
+function appendPxIfNumber(value) {
+  return (typeof value === 'number') ? '' + value + 'px' : value
+}
+
+function toStyleTag(rulesObj) {
+  let combinedRules = ''
+  for (let selector in rulesObj) {
+    let cssObject = rulesObj[selector]
+    let combinedProperties = ''
+    for (let prop in cssObject) {
+      let value = cssObject[prop]
+      combinedProperties += `${prop}: ${appendPxIfNumber(value)};` + '\n'
+    }
+    combinedRules += ` ${selector} {${combinedProperties}}` + '\n'
+  }
+  return $(`<style>${combinedRules}</style>`)
+}
+
+const objectMap = (obj, fn) =>
+  Object.fromEntries(
+    Object.entries(obj).map(
+      ([k, v], i) => fn(v, k, i)
+    )
+  )
+
+
+// 下划线转换驼峰
+function toHump(name) {
+  return name.replace(/\-(\w)/g, function(all, letter) {
+    return letter.toUpperCase()
+  })
+}
+
+// 驼峰转换下划线
+function toDash(name) {
+  return name.replace(/([A-Z])/g, '-$1').toLowerCase()
+}
+
+$(function() {
+  let container = document.querySelector('.container')
+  let config = Object.assign(window.config.index, {})
+  $('head').append(`<link rel="icon" href="${window.assetsPath}/favicon.ico">`)
+  // let config = window.config
+  // let config = {}
+  // for (let i = 0; i < localStorage.length; i++) {
+  //     let key = localStorage.key(i);
+  //     config[key] = localStorage.getItem(key)
+  // }
+  console.log(config)
+  // for (let key in config) {
+  //   console.log(key)
+  //   container.style[key] = config[key]
+  // }
+  const styles = objectMap(config, (v, k) => [toDash(k), v])
+  const styleTag = toStyleTag({ 'div.container#container': styles })
+  styleTag.attr('id', 'container-style')
+  $('head').append(styleTag)
+  container.innerHTML = window.config.content || ''
+
+  function makeDraggableFallback(el) {
+    // 方案一
+    // el.style['-webkit-app-region'] = 'drag';
+
+    // 方案二
+    let dragging = false
+    let mouseX = 0
+    let mouseY = 0
+    el.addEventListener('mousedown', (e) => {
+      dragging = true
+      const { pageX, pageY } = e
+      mouseX = pageX
+      mouseY = pageY
+      container.classList.add('cant-select')
+    })
+    window.addEventListener('mouseup', () => {
+      dragging = false
+      container.classList.remove('cant-select')
+    })
+    window.addEventListener('mousemove', (e) => {
+      if (dragging) {
+        const { pageX, pageY } = e
+        const win = require('electron').remote.getCurrentWindow()
+        const pos = win.getPosition()
+        pos[0] = pos[0] + pageX - mouseX
+        pos[1] = pos[1] + pageY - mouseY
+        win.setPosition(pos[0], pos[1], true)
+      }
+    })
+  }
+
+  makeDraggableFallback(container)
+  // container.onblur = () => {
+  //   container.setAttribute('contentEditable', false)
+  // }
+  container.oninput = () => {
+    ipcRenderer.send('content-change', container.innerHTML)
+  }
+  // container.onclick = function() {
+  //   this.setAttribute('contentEditable', true)
+  //   this.focus()
+  // }
+
+  ipcRenderer.on('config-update', (event, arg) => {
+    const styles = objectMap(arg.index, (v, k) => [toDash(k), v])
+    const styleTag = toStyleTag({ 'div.container#container': styles })
+    $('#container-style').html(styleTag.html())
+    // for (let key in arg.index) {
+    //   console.log(key)
+    //   container.style[key] = arg.index[key]
+    // }
+  })
+  BalloonEditor
+    .create(document.querySelector('.container'))
+    .catch(error => {
+      console.error(error)
+    })
+
+
+})
+</script>
+</body>
+</html>

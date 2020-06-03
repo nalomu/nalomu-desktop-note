@@ -1,0 +1,44 @@
+{
+  "name": "nalomu-desktop-note",
+  "version": "1.0.3",
+  "main": "main.js",
+  "author": "nalomu",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^8.2.0",
+    "electron-builder": "^22.4.1"
+  },
+  "dependencies": {
+    "@ckeditor/ckeditor5-build-balloon": "^19.0.2",
+    "@simonwep/pickr": "^1.5.1",
+    "jquery": "^3.4.1"
+  },
+  "build": {
+    "productName": "nalomu desktop note",
+    "appId": "com.nalomu.note",
+    "directories": {
+      "output": "build"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowElevation": true,
+      "allowToChangeInstallationDirectory": true
+    },
+    "win": {
+      "icon": "./assets/favicon.ico",
+      "target": [
+        "zip",
+        "nsis"
+      ]
+    },
+    "extraResources": [
+      "./assets/**"
+    ]
+  }
+}
