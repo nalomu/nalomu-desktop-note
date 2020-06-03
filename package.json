@@ -17,7 +17,7 @@
   "dependencies": {
     "@ckeditor/ckeditor5-build-balloon": "^19.0.2",
     "@simonwep/pickr": "^1.5.1",
-    "jquery": "^3.4.1"
+    "jquery": "^3.5.0"
   },
   "build": {
     "productName": "nalomu desktop note",
