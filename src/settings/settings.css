@@ -1,0 +1,94 @@
+
+* {
+  box-sizing: border-box;
+}
+
+.input {
+  outline-style: none;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 13px 14px;
+  width: 100%;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: "Microsoft soft", sans-serif;
+}
+
+.input:focus {
+  border-color: #66afe9;
+  outline: 0;
+  -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, .075), 0 0 8px rgba(102, 175, 233, .6)
+}
+
+button { /* 按钮美化 */
+  width: 270px; /* 宽度 */
+  height: 40px; /* 高度 */
+  border-width: 0px; /* 边框宽度 */
+  border-radius: 3px; /* 边框半径 */
+  background: #1E90FF; /* 背景颜色 */
+  cursor: pointer; /* 鼠标移入按钮范围时出现手势 */
+  outline: none; /* 不显示轮廓线 */
+  font-family: Microsoft YaHei, sans-serif; /* 设置字体 */
+  color: white; /* 字体颜色 */
+  font-size: 17px; /* 字体大小 */
+  /*border: 1px solid #555;*/
+}
+
+button:hover { /* 鼠标移入按钮范围时改变颜色 */
+  /*background: #5599FF;*/
+}
+
+.form-group {
+  margin-top: 10px;
+}
+
+.form-group > label, .form-group > div {
+  /*display: inline-block;*/
+  float: left;
+}
+
+.form-group > label {
+  width: 20%;
+  text-align: right;
+  padding: 13px 14px;
+}
+
+.check-align :first-child {
+  border-bottom-left-radius: 5px;
+  border-top-left-radius: 5px;
+}
+
+.check-align :last-child {
+  border-bottom-right-radius: 5px;
+  border-top-right-radius: 5px;
+}
+
+.check-align > label {
+  /*border: 1px solid #eee;*/
+  background: #ccc;
+  height: 36px;
+  padding: 2px;
+  display: inline-block;
+  float: left;
+}
+
+.form-group > div {
+  width: 80%;
+}
+
+.form-group::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.check-align::after {
+  content: '';
+  display: block;
+  clear: both;
+}
+
+.check-align > label.checked {
+  background: #999;
+}
