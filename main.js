@@ -65,13 +65,16 @@ function createWindow() {
 
   // 加载index.html文件
   mainWindow.loadFile('index.html')
+    .then(() => { mainWindow.webContents.send('sendSettings', config); })
+    .then(() => { mainWindow.show(); });
   mainWindow.on('resize', function() {
     config.size = mainWindow.getContentBounds()
     console.log(config.size)
-  }).once('ready-to-show', () => {
-    mainWindow.show()
-    // mainWindow.openDevTools()
   })
+    // .once('ready-to-show', () => {
+    // mainWindow.show()
+    // mainWindow.openDevTools()
+  // })
 }
 
 app.whenReady().then(() => {
