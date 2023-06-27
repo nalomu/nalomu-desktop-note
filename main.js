@@ -22,11 +22,10 @@ let defaultConfig = {
   'content': ''
 }
 let configFile = path.join(assetsPath, '/config.json')
-let writeConfig = (data, callback) =>
-  fs.writeFile(configFile,
-    JSON.stringify(data),
-    callback || (() => {
-    }))
+let writeConfig = (data, callback) => {
+  fs.writeFileSync(configFile, JSON.stringify(data))
+  callback && callback()
+}
 try {
   if (fs.existsSync(configFile))
     config = JSON.parse(fs.readFileSync(configFile).toString())
@@ -71,10 +70,19 @@ function createWindow() {
     console.log(config.size)
   }).once('ready-to-show', () => {
     mainWindow.show()
+    // mainWindow.openDevTools()
   })
 }
 
-app.whenReady().then(createWindow)
+app.whenReady().then(() => {
+  createWindow()
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow()
+    }
+  })
+})
 let tray = null
 
 function openSettingsPanel() {
@@ -136,8 +144,12 @@ app.on('ready', () => {
     mainWindow.focus()
   })
 }).on('before-quit', function() {
-  writeConfig(config)
+  console.log('before-quit')
+  writeConfig(config,()=>{
+    console.log('write config success')
+  })
 })
 ipcMain.on('content-change', function(event, message) {
+  console.log(message)
   config.content = message
 })

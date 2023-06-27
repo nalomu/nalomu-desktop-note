@@ -1,6 +1,6 @@
 {
   "name": "nalomu-desktop-note",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "main.js",
   "author": "nalomu",
   "license": "MIT",
@@ -12,8 +12,8 @@
     "dist": "electron-builder"
   },
   "devDependencies": {
-    "electron": "^8.2.4",
-    "electron-builder": "^22.4.1"
+    "electron": "^25.2.0",
+    "electron-builder": "^24.4.0"
   },
   "dependencies": {
     "@ckeditor/ckeditor5-build-balloon": "^19.0.2",

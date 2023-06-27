@@ -51,13 +51,16 @@
 
 </head>
 <body>
+<div style="height: 15px;background-color:rgb(51, 51, 51);border-bottom: 1px solid #EBEBEB;  -webkit-app-region: drag;"></div>
 <div class="container" id="container" data-placeholder="单击此处输入文本">
 </div>
-<!--<script src="node_modules/@ckeditor/ckeditor5-build-balloon/"></script>-->
+<script src="node_modules/@ckeditor/ckeditor5-build-balloon/build/ckeditor.js"></script>
+<script src="node_modules/jquery/dist/jquery.min.js"></script>
 <script>
-const { ipcRenderer } = require('electron')
-const $ = require('jquery')
-const BalloonEditor = require('@ckeditor/ckeditor5-build-balloon')
+// const { ipcRenderer } = require('electron')
+// const $ = require('jquery')
+// const BalloonEditor = require('@ckeditor/ckeditor5-build-balloon')
+
 
 function appendPxIfNumber(value) {
   return (typeof value === 'number') ? '' + value + 'px' : value
@@ -131,11 +134,11 @@ $(function() {
       const { pageX, pageY } = e
       mouseX = pageX
       mouseY = pageY
-      container.classList.add('cant-select')
+      // container.classList.add('cant-select')
     })
     window.addEventListener('mouseup', () => {
       dragging = false
-      container.classList.remove('cant-select')
+      // container.classList.remove('cant-select')
     })
     window.addEventListener('mousemove', (e) => {
       if (dragging) {
