@@ -12,6 +12,9 @@ export const mainConfig: Configuration = {
   module: {
     rules,
   },
+  output:{
+    assetModuleFilename: 'images/[hash][ext][query]'
+  },
   resolve: {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css', '.json'],
   },
