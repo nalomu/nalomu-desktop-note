@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld(
   // Allowed 'ipcRenderer' methods
   'bridge', {
     // From main to render
+    getSettings: (windowName: string) => {
+      ipcRenderer.send('getSettings', windowName)
+    },
     sendSettings: (handler: any) => {
       ipcRenderer.on('sendSettings', handler)
     },

@@ -4,6 +4,7 @@ import '@simonwep/pickr/dist/themes/classic.min.css'
 import $ from 'jquery'
 import Pickr from '@simonwep/pickr'
 
+window.bridge.getSettings('settings')
 window.bridge.sendSettings((event: any, data: { config: any, assetsPath: string }) => {
   window.config = data.config
   window.assetsPath = data.assetsPath

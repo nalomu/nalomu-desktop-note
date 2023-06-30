@@ -38,19 +38,24 @@ let writeConfig = (data: any, callback?: () => any) => {
 }
 
 // 读取配置
-try {
-  if (fs.existsSync(configFile))
-    config = JSON.parse(fs.readFileSync(configFile).toString())
-  else {
-    config = {}
-    writeConfig(defaultConfig)
+function getConfig() {
+
+  try {
+    if (fs.existsSync(configFile))
+      config = JSON.parse(fs.readFileSync(configFile).toString())
+    else {
+      config = {}
+      writeConfig(defaultConfig)
+    }
+    config = Object.assign(defaultConfig, config)
+  } catch (e) {
+    console.error('failed to load config.json')
+    config = defaultConfig
+    writeConfig(config)
   }
-  config = Object.assign(defaultConfig, config)
-} catch (e) {
-  console.error('failed to load config.json')
-  config = defaultConfig
-  writeConfig(config)
 }
+
+getConfig()
 
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
@@ -76,18 +81,12 @@ const createWindow = (): void => {
 
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY)
-    .then(() => {
-      mainWindow.webContents.send('sendSettings', {
-        assetsPath,
-        config
-      })
-    })
-    .then(() => {
-      mainWindow.show()
-    })
+    .then(() => mainWindow.show())
 
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.webContents.openDevTools()
+  }
   // 当窗口变换大小时记录下来
   mainWindow.on('resize', function () {
     config.size = mainWindow.getContentBounds()
@@ -147,17 +146,7 @@ function openSettingsPanel() {
   })
   modal.setMenu(new Menu())
   modal.loadURL(SETTINGS_WINDOW_WEBPACK_ENTRY)
-    .then(() => {
-      console.log(1)
-      modal.webContents.send('sendSettings', {
-        assetsPath,
-        config
-      })
-    })
-    .then(() => {
-      console.log(2)
-      modal.show()
-    })
+    .then(() => modal.show())
   ipcMain.on('config-change', function (event, message) {
     config = Object.assign(config, message)
     mainWindow.setAlwaysOnTop(config.alwaysOnTop)
@@ -198,4 +187,15 @@ app.on('ready', () => {
 ipcMain.on('content-change', function (event, message) {
   console.log(message)
   config.content = message
+  writeConfig(config, () => {
+    console.log('write content success')
+  })
+})
+ipcMain.on('getSettings', function (e, windowName) {
+  getConfig()
+  if (windowName === 'mainWindow') {
+    mainWindow.webContents.send('sendSettings', { assetsPath, config })
+  } else if (windowName === 'settings') {
+    modal.webContents.send('sendSettings', { assetsPath, config })
+  }
 })

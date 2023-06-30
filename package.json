@@ -1,6 +1,6 @@
 {
   "name": "nalomu-desktop-note",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "main": ".webpack/main",
   "author": {
     "name": "nalomu",
@@ -11,10 +11,10 @@
   "private": false,
   "repository": "https://github.com/nalomu/nalomu-desktop-note",
   "scripts": {
-    "start": "electron-forge start",
-    "package": "electron-forge package",
-    "make": "electron-forge make",
-    "publish": "electron-forge publish",
+    "start": "cross-env NODE_ENV=development electron-forge start",
+    "package": "cross-env NODE_ENV=production electron-forge package",
+    "make": "cross-env NODE_ENV=production electron-forge make",
+    "publish": "cross-env NODE_ENV=production electron-forge publish",
     "lint": "eslint --ext .ts,.tsx ."
   },
   "keywords": [],
@@ -27,9 +27,11 @@
     "@electron-forge/plugin-auto-unpack-natives": "^6.2.1",
     "@electron-forge/plugin-webpack": "^6.2.1",
     "@types/jquery": "^3.5.16",
+    "@types/lodash": "^4.14.195",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
+    "cross-env": "^7.0.3",
     "css-loader": "^6.0.0",
     "electron": "25.2.0",
     "eslint": "^8.0.1",
@@ -42,9 +44,16 @@
     "typescript": "~4.5.4"
   },
   "dependencies": {
-    "@ckeditor/ckeditor5-build-balloon": "^38.0.1",
+    "@editorjs/checklist": "^1.5.0",
+    "@editorjs/editorjs": "^2.27.2",
+    "@editorjs/header": "^2.7.0",
+    "@editorjs/list": "^1.8.0",
+    "@editorjs/quote": "^2.5.0",
+    "@editorjs/raw": "^2.4.0",
+    "@editorjs/simple-image": "^1.5.1",
     "@simonwep/pickr": "^1.8.2",
     "electron-squirrel-startup": "^1.0.0",
-    "jquery": "^3.7.0"
+    "jquery": "^3.7.0",
+    "lodash": "^4.17.21"
   }
 }

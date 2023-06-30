@@ -28,11 +28,23 @@
 
 import './index.css'
 import $ from 'jquery'
-import BalloonEditor from '@ckeditor/ckeditor5-build-balloon'
-import '@ckeditor/ckeditor5-build-balloon/build/translations/zh-cn'
-
+import _ from 'lodash'
+import EditorJS from '@editorjs/editorjs'
+// @ts-ignore
+import Header from '@editorjs/header'
+// @ts-ignore
+import RawTool from '@editorjs/raw'
+// @ts-ignore
+import SimpleImage from '@editorjs/simple-image'
+// @ts-ignore
+import List from '@editorjs/list'
+// @ts-ignore
+import Checklist from '@editorjs/checklist'
+// @ts-ignore
+import Quote from '@editorjs/quote'
 
 declare interface IElectronAPI {
+  getSettings: (param: any) => any
   sendSettings: (param: any) => any
   onConfigUpdate: (param: any) => any
   contentChange: (param: any) => any
@@ -90,6 +102,7 @@ function toDash(name: string) {
 }
 
 window.config = {}
+window.bridge.getSettings('mainWindow')
 window.bridge.sendSettings((event: any, data: { config: any, assetsPath: string }) => {
   window.config = data.config
   window.assetsPath = data.assetsPath
@@ -102,26 +115,61 @@ window.bridge.sendSettings((event: any, data: { config: any, assetsPath: string 
     const styleTag = toStyleTag({ 'div.container#container': styles })
     styleTag.attr('id', 'container-style')
     $('head').append(styleTag)
-    container.innerHTML = window.config.content || ''
+    // container.innerHTML = window.config.content || ''
 
 
-    container.oninput = () => {
-      window.bridge.contentChange(container.innerHTML)
-    }
+    // container.oninput = () => {
+    //   // window.bridge.contentChange(container.innerHTML)
+    // }
+    console.log(window.config.content)
     window.bridge.onConfigUpdate(function (event: any, arg: any) {
 
       const styles = objectMap(arg.index, (v: any, k: string) => [toDash(k), v])
       const styleTag = toStyleTag({ 'div.container#container': styles })
       $('#container-style').html(styleTag.html())
     })
-    BalloonEditor
-      .create(container, {
-        language: 'zh-cn',
-      })
-      .catch(error => {
-        console.error(error)
-      })
-
+    const editor = new EditorJS({
+      holder: container,
+      placeholder: '点击这里输入内容',
+      data: window.config.content || {},
+      tools: {
+        header: {
+          class: Header,
+          shortcut: 'CMD+SHIFT+H'
+        },
+        raw: RawTool,
+        image: SimpleImage,
+        list: {
+          class: List,
+          inlineToolbar: true,
+          config: {
+            defaultStyle: 'unordered'
+          }
+        },
+        checklist: {
+          class: Checklist,
+          inlineToolbar: true
+        },
+        quote: {
+          class: Quote,
+          inlineToolbar: true,
+          shortcut: 'CMD+SHIFT+O',
+          config: {
+            quotePlaceholder: 'Enter a quote',
+            captionPlaceholder: 'Quote\'s author'
+          }
+        }
+      },
+      onChange(api, event) {
+        _.debounce(() => {
+          editor.save().then((outputData) => {
+            window.bridge.contentChange(outputData)
+          }).catch((error) => {
+            console.log('Saving failed: ', error)
+          })
+        }, 100)()
+      }
+    })
 
   })
 })
