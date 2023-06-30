@@ -30,7 +30,6 @@ import './index.css'
 import $ from 'jquery'
 import BalloonEditor from '@ckeditor/ckeditor5-build-balloon'
 import '@ckeditor/ckeditor5-build-balloon/build/translations/zh-cn'
-// import { Base64UploadAdapter } from '@ckeditor/ckeditor5-upload';
 
 
 declare interface IElectronAPI {
@@ -118,7 +117,6 @@ window.bridge.sendSettings((event: any, data: { config: any, assetsPath: string 
     BalloonEditor
       .create(container, {
         language: 'zh-cn',
-        // plugins: [ Base64UploadAdapter, /* ... */ ],
       })
       .catch(error => {
         console.error(error)
