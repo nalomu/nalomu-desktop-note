@@ -93,3 +93,8 @@ out/
 
 .idea/
 /config.json
+
+/dist/
+/src-tauri/target/
+/src-tauri/gen/
+/artifacts/
