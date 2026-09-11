@@ -1,0 +1,20 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    target-branch: tauri
+    schedule:
+      interval: weekly
+    groups:
+      tiptap:
+        patterns: ["@tiptap/*"]
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    target-branch: tauri
+    schedule:
+      interval: weekly
+  - package-ecosystem: github-actions
+    directory: /
+    target-branch: tauri
+    schedule:
+      interval: weekly
