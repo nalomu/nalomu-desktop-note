@@ -44,7 +44,7 @@ jobs:
       - run: pnpm audit
       - run: cargo install cargo-audit --version 0.22.2 --locked
       - run: cargo audit --file src-tauri/Cargo.lock
-      - run: pnpm tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundle }} -- --locked
+      - run: pnpm exec tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundle }} -- --locked
       - name: Collect macOS package
         if: runner.os == 'macOS'
         run: |
@@ -63,3 +63,67 @@ jobs:
           name: note-${{ matrix.target }}
           path: artifacts/
           if-no-files-found: error
+
+  draft-release:
+    name: Tag and draft test release
+    needs: desktop
+    if: github.ref == 'refs/heads/tauri' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    concurrency:
+      group: draft-release-${{ github.run_id }}
+      cancel-in-progress: false
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Download verified packages
+        run: gh run download "$GITHUB_RUN_ID" --pattern 'note-*' --dir artifacts
+      - name: Prepare assets and release notes
+        shell: python
+        run: |
+          import hashlib, json, os, pathlib, shutil
+          version = json.loads(pathlib.Path('package.json').read_text())['version']
+          tag = f"v{version}-test.{os.environ['GITHUB_RUN_NUMBER']}.{os.environ['GITHUB_SHA'][:7]}"
+          with open(os.environ['GITHUB_ENV'], 'a') as env:
+              env.write(f"RELEASE_TAG={tag}\n")
+          out = pathlib.Path('release-assets')
+          out.mkdir()
+          packages = sorted(p for p in pathlib.Path('artifacts').rglob('*') if p.suffix in ('.zip', '.exe'))
+          if len(packages) != 3:
+              raise SystemExit(f'Expected 3 platform packages, got {len(packages)}')
+          sums = []
+          for package in packages:
+              digest = hashlib.sha256(package.read_bytes()).hexdigest()
+              expected = (package.parent / 'SHA256SUMS.txt').read_text().lower()
+              if digest not in expected:
+                  raise SystemExit(f'Checksum mismatch: {package}')
+              shutil.copy2(package, out / package.name)
+              sums.append(f'{digest}  {package.name}')
+          (out / 'SHA256SUMS.txt').write_text('\n'.join(sums) + '\n')
+          pathlib.Path('release-notes.md').write_text(
+              f"未签名测试包，提交 {os.environ['GITHUB_SHA']}。\n\n"
+              "包含 macOS Apple Silicon、macOS Intel 的 .app ZIP 和 Windows x64 NSIS 安装包。"
+              "请核对 SHA256SUMS.txt；macOS 解压后打开应用，Windows 运行安装包。\n\n"
+              "本次 CI 类型检查、自动化测试、Rust 检查及依赖审计通过。"
+              "Cargo 上游警告及缓解措施见 docs/security.md；原生验收边界见 docs/acceptance.md。"
+              "构建通过不代表 Windows 原生验收通过。此版本保持草稿，不自动公开发布。\n"
+          )
+      - name: Tag tested commit and create draft
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" --silent; then
+            gh api "repos/$GH_REPO/git/refs" -f "ref=refs/tags/$RELEASE_TAG" -f "sha=$GITHUB_SHA" --silent
+          fi
+          tagged_sha=$(gh api "repos/$GH_REPO/git/ref/tags/$RELEASE_TAG" --jq '.object.sha')
+          test "$tagged_sha" = "$GITHUB_SHA"
+          if gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft' > release-state.txt; then
+            test "$(cat release-state.txt)" = true
+            gh release upload "$RELEASE_TAG" release-assets/* --clobber
+          else
+            gh release create "$RELEASE_TAG" release-assets/* --verify-tag --draft --prerelease --latest=false --title "Nalomu Note $RELEASE_TAG" --notes-file release-notes.md
+          fi

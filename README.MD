@@ -18,7 +18,8 @@ pnpm start
 ## 使用
 
 - 在便签中输入；300ms 防抖自动保存，失败时显示错误并可重试。
-- `Aa` 打开格式菜单，选中文字时显示简短格式工具条。支持标题、列表、待办、引用、代码和 HTTPS 图片地址；链接默认不跳转，避免离开编辑页面。
+- `Aa` 打开格式菜单，选中文字时显示简短格式工具条。支持标题、列表、待办、引用、代码和 HTTPS 图片地址、本地图片与剪贴板图片；链接默认不跳转，避免离开编辑页面。
+- 使用 Cmd+V / Ctrl+V 粘贴图片，或在 `Aa` 菜单选择“本地图片”“粘贴图片”；选中图片拖动底角等比例调整尺寸。只调整图片，不缩放整个编辑区。
 - 拖动顶部“便签”区域移动窗口，拖动窗口边缘缩放；减号或关闭窗口会隐藏便签。
 - 齿轮或托盘菜单打开独立设置窗口，保存后立即应用。
 - 从托盘退出，或 macOS 使用 Cmd+Q：先保存，失败则保留窗口，重试后再退出。
@@ -30,7 +31,9 @@ pnpm start
 - macOS：`~/Library/Application Support/com.nalomu.desktop-note/`
 - Windows：`%APPDATA%\com.nalomu.desktop-note\`
 
-`note.json` 保存 `schemaVersion: 1`、Tiptap JSON 内容和外观；`note.backup.json` 保存上一次有效状态。损坏文件复制为 `note-corrupt-*.json` 后尝试恢复备份；无有效备份时停止编辑并显示错误。恢复前退出应用并备份整个目录。高版本数据不自动降级。
+`note.json` 保存 `schemaVersion: 2`、Tiptap JSON 内容和外观；`note.backup.json` 保存上一次有效状态。损坏文件复制为 `note-corrupt-*.json` 后尝试恢复备份；无有效备份时停止编辑并显示错误。恢复前退出应用并备份整个目录。高版本数据不自动降级。
+
+图片保存在应用数据目录的 `images/` 中，导入时转换为 PNG 并按内容哈希去重，正文只记录附件标识和尺寸。图片导入后不再依赖源文件路径或源应用的持续访问权限。此目录属于持久数据，不是可清理的缓存；备份时应连同 JSON 一起复制。为保留撤销与备份恢复，删除正文中的图片暂不删除附件文件。支持 PNG、JPEG、WebP 文件（最多 20 MB）；原生剪贴板支持位图。旧版 schema 1 数据会升级为 schema 2，升级后勿使用旧程序写入。
 
 透明窗口需要 macOS 私有 API，因此当前路线为独立分发，不面向 Mac App Store。
 
@@ -52,6 +55,6 @@ pnpm tauri build --bundles app
 pnpm tauri build --bundles nsis
 ```
 
-CI 分别生成 macOS ARM64、macOS Intel 的 `.app` ZIP，以及 Windows x64 NSIS 安装包，附 SHA-256 校验值。产物从 Actions 下载；这些是未签名/未公证测试包，系统可能要求手动确认打开。暂不自动创建 Release。
+CI 分别生成 macOS ARM64、macOS Intel 的 `.app` ZIP，以及 Windows x64 NSIS 安装包，附 SHA-256 校验值。产物从 Actions 下载；这些是未签名/未公证测试包，系统可能要求手动确认打开。`tauri` 推送或手动运行的三平台检查全部通过后，自动为该提交创建 `v版本-test.运行编号.提交短哈希` 标签及 Release 草稿，附安装包和校验值；PR 和定时安全检查不创建草稿。草稿需手动验收后发布。
 
 安全警告与验收边界见 [安全记录](docs/security.md) 和 [验收记录](docs/acceptance.md)。在 Windows 原生验收完成前保留 `master` 为默认分支。GitHub 定时任务仅在默认分支存在工作流后自动生效；此前由 `tauri` 推送触发检查。
