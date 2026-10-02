@@ -56,7 +56,7 @@ pub struct Data {
 impl Default for Data {
     fn default() -> Self {
         Self {
-            schema_version: 1,
+            schema_version: 2,
             content: json!({"type":"doc","content":[{"type":"paragraph"}]}),
             settings: Settings::default(),
         }
@@ -98,9 +98,9 @@ pub fn validate_doc(v: &Value) -> Result<(), String> {
             && !v
                 .pointer("/attrs/src")
                 .and_then(Value::as_str)
-                .is_some_and(|s| s.starts_with("https://"))
+                .is_some_and(|s| s.starts_with("https://") || crate::images::valid_src(s))
         {
-            return Err("图片仅允许 HTTPS 地址".into());
+            return Err("图片仅允许 HTTPS 地址或便签附件".into());
         }
         if let Some(marks) = v.get("marks") {
             for mark in marks.as_array().ok_or("无效格式")? {
@@ -134,6 +134,18 @@ pub fn validate_doc(v: &Value) -> Result<(), String> {
             };
             if attrs.keys().any(|key| !allowed.contains(&key.as_str())) {
                 return Err("不支持的节点属性".into());
+            }
+            if t == "image" {
+                for field in ["width", "height"] {
+                    if let Some(value) = attrs.get(field).filter(|v| !v.is_null()) {
+                        if !value
+                            .as_f64()
+                            .is_some_and(|n| n.is_finite() && (1.0..=8192.0).contains(&n))
+                        {
+                            return Err("无效图片显示尺寸".into());
+                        }
+                    }
+                }
             }
             if t == "heading"
                 && !attrs
@@ -202,13 +214,14 @@ impl Storage {
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
         let path = dir.join("note.json");
         let read = |p: &std::path::Path| -> Result<Data, String> {
-            let data: Data = serde_json::from_slice(&fs::read(p).map_err(|e| e.to_string())?)
+            let mut data: Data = serde_json::from_slice(&fs::read(p).map_err(|e| e.to_string())?)
                 .map_err(|e| e.to_string())?;
-            if data.schema_version != 1 {
+            if ![1, 2].contains(&data.schema_version) {
                 return Err("不支持的数据版本".into());
             }
             data.settings.validate()?;
             validate_doc(&data.content)?;
+            data.schema_version = 2;
             Ok(data)
         };
         if !path.exists() {
@@ -339,7 +352,7 @@ mod regression_tests {
         let mut store = Storage::load(dir.path().into()).unwrap();
         store.save(Data::default()).unwrap();
         let mut data = store.data.clone();
-        data.schema_version = 2;
+        data.schema_version = 3;
         fs::write(
             dir.path().join("note.json"),
             serde_json::to_vec(&data).unwrap(),
@@ -356,5 +369,58 @@ mod regression_tests {
         ] {
             assert!(validate_doc(&json!({"type":"doc","content":[child]})).is_err());
         }
+    }
+}
+#[cfg(test)]
+mod image_document_tests {
+    use super::*;
+    #[test]
+    fn preserves_owned_image_dimensions_and_rejects_unsafe_sources() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut store = Storage::load(dir.path().into()).unwrap();
+        let image = crate::images::import_rgba(dir.path(), 1, 1, &[0, 0, 0, 255]).unwrap();
+        let mut next = store.data.clone();
+        next.content = json!({"type":"doc","content":[{"type":"image","attrs":{"src":image.src,"width":120.5,"height":120.5}}]});
+        store.save(next).unwrap();
+        let restored = Storage::load(dir.path().into()).unwrap();
+        assert_eq!(
+            restored.data.content.pointer("/content/0/attrs/width"),
+            Some(&json!(120.5))
+        );
+        for src in [
+            "file:///etc/passwd",
+            "note-image:../../note.json",
+            "data:image/png;base64,bad",
+        ] {
+            assert!(validate_doc(
+                &json!({"type":"doc","content":[{"type":"image","attrs":{"src":src}}]})
+            )
+            .is_err());
+        }
+        assert!(validate_doc(
+            &json!({"type":"doc","content":[{"type":"image","attrs":{"src":image.src,"width":-1}}]})
+        )
+        .is_err());
+    }
+}
+#[cfg(test)]
+mod legacy_schema_tests {
+    use super::*;
+    #[test]
+    fn reads_version_one_and_saves_version_two() {
+        let dir = tempfile::tempdir().unwrap();
+        let mut legacy = Data::default();
+        legacy.schema_version = 1;
+        fs::write(
+            dir.path().join("note.json"),
+            serde_json::to_vec(&legacy).unwrap(),
+        )
+        .unwrap();
+        let mut loaded = Storage::load(dir.path().into()).unwrap();
+        assert_eq!(loaded.data.schema_version, 2);
+        loaded.save(loaded.data.clone()).unwrap();
+        let saved: Data =
+            serde_json::from_slice(&fs::read(dir.path().join("note.json")).unwrap()).unwrap();
+        assert_eq!(saved.schema_version, 2);
     }
 }

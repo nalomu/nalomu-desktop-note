@@ -2,7 +2,8 @@
 import { computed, onMounted, onBeforeUnmount, ref, shallowRef } from "vue";
 import { Editor, EditorContent } from "@tiptap/vue-3";
 import StarterKit from "@tiptap/starter-kit";
-import Image from "@tiptap/extension-image";
+import { NoteImage, imageBytes, type Attachment } from "./images";
+import type { SelectionBookmark } from "@tiptap/pm/state";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { invoke } from "@tauri-apps/api/core";
@@ -38,6 +39,10 @@ const error = ref(""),
   menu = ref(false);
 const urlKind = ref<"link" | "image">(),
   url = ref("");
+const imagePicker = ref<HTMLInputElement>();
+const importing = ref(0);
+const imageBookmarks = new Set<{ bookmark: SelectionBookmark }>();
+const imageJobs = new Set<Promise<void>>();
 const stops: UnlistenFn[] = [];
 let timer: ReturnType<typeof setTimeout> | undefined;
 const queue = new SaveQueue<unknown>((content) =>
@@ -59,7 +64,7 @@ async function save() {
   try {
     await queue.flush();
     status.value = "已保存";
-    error.value = "";
+    if (error.value.startsWith("保存失败")) error.value = "";
   } catch (e) {
     error.value = `保存失败，内容仍在窗口中：${e}`;
     status.value = "未保存";
@@ -77,6 +82,7 @@ function changed() {
 }
 async function exit() {
   try {
+    await Promise.all(imageJobs);
     await save();
     await invoke("finish_exit");
   } catch {
@@ -118,6 +124,111 @@ function applyUrl() {
   url.value = "";
   error.value = "";
 }
+let imageTail = Promise.resolve();
+function insertImages(load: () => Promise<(Attachment & { alt?: string })[]>) {
+  const current = editor.value;
+  if (!current) return;
+  const position = { bookmark: current.state.selection.getBookmark() };
+  imageBookmarks.add(position);
+  importing.value++;
+  const job = imageTail.then(async () => {
+    try {
+      const attachments = await load();
+      if (current.isDestroyed) return;
+      const maxWidth = Math.max(32, current.view.dom.clientWidth);
+      const inserted = current
+        .chain()
+        .focus()
+        .command(({ tr }) => {
+          tr.setSelection(position.bookmark.resolve(tr.doc));
+          return true;
+        })
+        .insertContent(
+          attachments.map((attachment) => {
+            const width = Math.min(attachment.width, maxWidth);
+            return {
+              type: "image",
+              attrs: {
+                ...attachment,
+                width,
+                height: Math.max(
+                  1,
+                  Math.round((attachment.height * width) / attachment.width),
+                ),
+              },
+            };
+          }),
+        )
+        .run();
+      if (!inserted)
+        throw new Error("当前位置无法插入图片，请将光标移到正文后重试");
+      error.value = "";
+    } catch (e) {
+      error.value = `图片插入失败：${e}`;
+      throw e;
+    } finally {
+      imageBookmarks.delete(position);
+      importing.value--;
+    }
+  });
+  imageTail = job.catch(() => {});
+  imageJobs.add(job);
+  // exit() waits for these jobs before saving the final document.
+  void job.catch(() => {}).finally(() => imageJobs.delete(job));
+}
+function insertImage(load: () => Promise<Attachment>) {
+  insertImages(async () => [await load()]);
+}
+function importFiles(files: File[]) {
+  if (!files.length) return;
+  insertImages(async () => {
+    const attachments: (Attachment & { alt: string })[] = [];
+    for (const file of files) {
+      const bytes = await imageBytes(file);
+      attachments.push({
+        ...(await invoke<Attachment>("import_image", { bytes })),
+        alt: file.name,
+      });
+    }
+    return attachments;
+  });
+}
+function chooseImage(event: Event) {
+  const input = event.target as HTMLInputElement;
+  importFiles(Array.from(input.files ?? []));
+  input.value = "";
+}
+function pasteImages(event: ClipboardEvent): boolean {
+  const data = event.clipboardData;
+  if (!data) return false;
+  const files = Array.from(data.files);
+  if (files.length) {
+    event.preventDefault();
+    importFiles(files);
+    return true;
+  }
+  const html = data.getData("text/html");
+  if (html) {
+    const pasted = new DOMParser().parseFromString(html, "text/html");
+    const image = pasted.querySelector("img");
+    if (
+      image &&
+      !pasted.body.textContent?.trim() &&
+      !image.getAttribute("src")?.includes("note-image")
+    ) {
+      event.preventDefault();
+      insertImage(() => invoke<Attachment>("paste_image"));
+      return true;
+    }
+  }
+  // WebKit sometimes exposes native bitmap data only through the system clipboard.
+  if (!data.getData("text/plain") && !data.getData("text/html")) {
+    event.preventDefault();
+    insertImage(() => invoke<Attachment>("paste_image"));
+    return true;
+  }
+  return false;
+}
 async function openSettings() {
   try {
     await invoke("open_settings");
@@ -154,7 +265,7 @@ onMounted(async () => {
               protocols: ["http", "https", "mailto"],
             },
           }),
-          Image.configure({ allowBase64: false }),
+          NoteImage,
           TaskList,
           TaskItem.configure({
             nested: true,
@@ -162,6 +273,7 @@ onMounted(async () => {
           }),
         ],
         editorProps: {
+          handlePaste: (_view, event) => pasteImages(event),
           attributes: {
             "aria-label": "便签内容",
             role: "textbox",
@@ -170,6 +282,11 @@ onMounted(async () => {
           },
         },
         onUpdate: changed,
+        onTransaction: ({ transaction }) => {
+          imageBookmarks.forEach((position) => {
+            position.bookmark = position.bookmark.map(transaction.mapping);
+          });
+        },
         onSelectionUpdate: ({ editor: e }) => {
           selected.value = !e.state.selection.empty;
         },
@@ -281,13 +398,25 @@ onBeforeUnmount(() => {
           引用</button
         ><button @click="editor.chain().focus().toggleCodeBlock().run()">
           代码</button
-        ><button @click="urlKind = 'image'">图片</button
+        ><button @click="urlKind = 'image'">图片链接</button
+        ><button @click="imagePicker?.click()">本地图片</button
+        ><button @click="insertImage(() => invoke<Attachment>('paste_image'))">
+          粘贴图片</button
         ><button @click="editor.chain().focus().undo().run()">撤销</button
         ><button @click="editor.chain().focus().redo().run()">
           重做
         </button></template
       >
     </nav>
+    <input
+      ref="imagePicker"
+      class="image-picker"
+      type="file"
+      accept="image/png,image/jpeg,image/webp"
+      multiple
+      aria-label="选择本地图片"
+      @change="chooseImage"
+    />
     <form v-if="urlKind" class="url-form" @submit.prevent="applyUrl">
       <label
         >{{ urlKind === "image" ? "图片地址" : "链接地址"
@@ -303,7 +432,7 @@ onBeforeUnmount(() => {
       @focusout="save().catch(() => {})"
     />
     <footer>
-      <span role="status">{{ status }}</span
+      <span role="status">{{ importing ? "正在保存图片…" : status }}</span
       ><button v-if="status === '未保存'" @click="save().catch(() => {})">
         重试保存
       </button>

@@ -1,9 +1,30 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+mod images;
 mod storage;
 use std::sync::Mutex;
 use storage::{Settings, Storage};
 use tauri::{Emitter, Manager};
+use tauri_plugin_clipboard_manager::ClipboardExt;
 struct State(Mutex<Result<Storage, String>>);
+#[tauri::command]
+async fn import_image(bytes: Vec<u8>, app: tauri::AppHandle) -> Result<images::Attachment, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    tauri::async_runtime::spawn_blocking(move || images::import(&dir, &bytes))
+        .await
+        .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn paste_image(app: tauri::AppHandle) -> Result<images::Attachment, String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let image = app.clipboard().read_image().map_err(|_| {
+            "剪贴板中没有可读取的图片，请复制图片内容，或使用本地图片按钮选择文件".to_string()
+        })?;
+        images::import_rgba(&dir, image.width(), image.height(), image.rgba())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
 #[tauri::command]
 fn read_data(state: tauri::State<State>) -> Result<serde_json::Value, String> {
     let lock = state.0.lock().map_err(|e| e.to_string())?;
@@ -68,6 +89,26 @@ fn finish_exit(app: tauri::AppHandle) {
 }
 fn main() {
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_clipboard_manager::init())
+        .register_uri_scheme_protocol("note-image", |context, request| {
+            let result = context
+                .app_handle()
+                .path()
+                .app_data_dir()
+                .map_err(|e| e.to_string())
+                .and_then(|dir| images::read(&dir, request.uri().path().trim_start_matches('/')));
+            match result {
+                Ok(bytes) => tauri::http::Response::builder()
+                    .header("Content-Type", "image/png")
+                    .header("X-Content-Type-Options", "nosniff")
+                    .body(bytes)
+                    .unwrap(),
+                Err(_) => tauri::http::Response::builder()
+                    .status(404)
+                    .body(Vec::new())
+                    .unwrap(),
+            }
+        })
         .plugin(tauri_plugin_single_instance::init(|app, _, _| show(app)))
         .plugin(
             tauri_plugin_window_state::Builder::default()
@@ -79,6 +120,8 @@ fn main() {
         )
         .invoke_handler(tauri::generate_handler![
             read_data,
+            import_image,
+            paste_image,
             save_content,
             save_settings,
             open_settings,
