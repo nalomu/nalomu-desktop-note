@@ -44,7 +44,9 @@ jobs:
       - run: pnpm audit
       - run: cargo install cargo-audit --version 0.22.2 --locked
       - run: cargo audit --file src-tauri/Cargo.lock
-      - run: pnpm exec tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundle }} -- --locked
+      - name: Build desktop package
+        shell: bash
+        run: node node_modules/@tauri-apps/cli/tauri.js build --target ${{ matrix.target }} --bundles ${{ matrix.bundle }} -- --locked
       - name: Collect macOS package
         if: runner.os == 'macOS'
         run: |
