@@ -29,15 +29,15 @@
     "@tiptap/pm": "3.31.3",
     "@tiptap/starter-kit": "3.31.3",
     "@tiptap/vue-3": "3.31.3",
-    "vue": "3.5.42"
+    "vue": "3.5.43"
   },
   "devDependencies": {
-    "@playwright/test": "1.58.2",
+    "@playwright/test": "1.63.0",
     "@tauri-apps/cli": "2.11.4",
-    "@vitejs/plugin-vue": "6.0.8",
-    "prettier": "3.8.1",
+    "@vitejs/plugin-vue": "6.0.9",
+    "prettier": "3.9.9",
     "typescript": "~5.9.3",
-    "vite": "8.2.2",
+    "vite": "8.3.1",
     "vitest": "4.1.11",
     "vue-tsc": "3.3.11"
   }
