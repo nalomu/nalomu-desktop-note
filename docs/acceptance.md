@@ -27,3 +27,7 @@ Windows 原生验收与安全门槛完成后，再为旧 master 提交打归档�
 - macOS Apple Silicon 原生通过：独立测试标识 `com.nalomu.desktop-note.image-qa`，实际文件选择导入；从“预览”复制位图后 Cmd+V 插入；菜单原生剪贴板按钮插入；拖动底角缩放；退出重启。测试源文件删除后两张图片仍正常显示，第一张的 97×97 尺寸恢复。未访问旧版用户数据。
 - 浏览器图片截图：本机 `/tmp/nalomu-note-pasted-image.png`。Playwright IPC 为替身，原生结论只来自上述 macOS 操作。
 - Windows 图片剪贴板、权限及缩放需实机或虚拟机验收；macOS Intel 原生验收、真实中文输入法组合输入和不同 DPI 验收仍未完成。默认分支继续保留 master。
+
+## 默认分支调整（2026-10-03）
+
+按仓库维护者要求，不等待原生验收完成，将默认分支切换为 tauri；保留 master 历史及 legacy-electron-master-20261003 归档标签。此操作不表示上列待完成验收已经通过。

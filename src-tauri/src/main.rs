@@ -39,24 +39,94 @@ fn save_content(content: serde_json::Value, state: tauri::State<State>) -> Resul
     next.content = content;
     s.save(next)
 }
-#[tauri::command]
-fn save_settings(
+fn persist_settings(
+    s: &mut Storage,
+    app: &tauri::AppHandle,
     settings: Settings,
-    state: tauri::State<State>,
-    app: tauri::AppHandle,
 ) -> Result<(), String> {
     settings.validate()?;
-    let mut lock = state.0.lock().map_err(|e| e.to_string())?;
-    let s = lock.as_mut().map_err(|e| e.clone())?;
+    let previous_top = s.data.settings.always_on_top;
     let mut next = s.data.clone();
     next.settings = settings.clone();
-    if let Some(w) = app.get_webview_window("main") {
+    let window = app.get_webview_window("main");
+    if let Some(w) = &window {
         w.set_always_on_top(settings.always_on_top)
             .map_err(|e| e.to_string())?;
     }
-    s.save(next)?;
+    if let Err(error) = s.save(next) {
+        if let Some(w) = &window {
+            let _ = w.set_always_on_top(previous_top);
+        }
+        return Err(error);
+    }
     app.emit("settings-updated", settings)
         .map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn save_settings(
+    mut settings: Settings,
+    state: tauri::State<State>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let mut lock = state.0.lock().map_err(|e| e.to_string())?;
+    let s = lock.as_mut().map_err(|e| e.clone())?;
+    // Appearance and pinning have separate controls. An older open settings window
+    // must not overwrite the pin state changed by the note header.
+    settings.always_on_top = s.data.settings.always_on_top;
+    persist_settings(s, &app, settings)
+}
+#[tauri::command]
+fn set_always_on_top(
+    value: bool,
+    state: tauri::State<State>,
+    app: tauri::AppHandle,
+) -> Result<(), String> {
+    let mut lock = state.0.lock().map_err(|e| e.to_string())?;
+    let s = lock.as_mut().map_err(|e| e.clone())?;
+    let mut settings = s.data.settings.clone();
+    settings.always_on_top = value;
+    persist_settings(s, &app, settings)
+}
+#[tauri::command]
+async fn read_clipboard_text(app: tauri::AppHandle) -> Result<String, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.clipboard()
+            .read_text()
+            .map_err(|_| "剪贴板中没有文字；复制图片后请选择粘贴图片".to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn write_clipboard(html: String, text: String, app: tauri::AppHandle) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        app.clipboard()
+            .write_html(html, Some(text))
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+#[tauri::command]
+async fn copy_image(src: String, app: tauri::AppHandle) -> Result<(), String> {
+    let dir = app.path().app_data_dir().map_err(|e| e.to_string())?;
+    tauri::async_runtime::spawn_blocking(move || {
+        let bytes = images::read(
+            &dir,
+            src.strip_prefix("note-image:")
+                .ok_or("网络图片请使用系统复制操作")?,
+        )?;
+        let rgba = image::load_from_memory(&bytes)
+            .map_err(|e| e.to_string())?
+            .into_rgba8();
+        let image =
+            tauri::image::Image::new_owned(rgba.as_raw().clone(), rgba.width(), rgba.height());
+        app.clipboard()
+            .write_image(&image)
+            .map_err(|e| e.to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 fn show(app: &tauri::AppHandle) {
     if let Some(w) = app.get_webview_window("main") {
@@ -70,16 +140,21 @@ fn open_settings(app: tauri::AppHandle) -> Result<(), String> {
         w.show().map_err(|e| e.to_string())?;
         w.set_focus().map_err(|e| e.to_string())?;
     } else {
-        tauri::WebviewWindowBuilder::new(
+        let builder = tauri::WebviewWindowBuilder::new(
             &app,
             "settings",
             tauri::WebviewUrl::App("index.html?settings".into()),
         )
         .title("便签设置")
+        .theme(Some(tauri::Theme::Dark))
+        .background_color(tauri::window::Color(32, 34, 37, 255))
         .inner_size(480.0, 620.0)
-        .min_inner_size(360.0, 480.0)
-        .build()
-        .map_err(|e| e.to_string())?;
+        .min_inner_size(360.0, 480.0);
+        #[cfg(target_os = "macos")]
+        let builder = builder
+            .title_bar_style(tauri::TitleBarStyle::Transparent)
+            .hidden_title(true);
+        builder.build().map_err(|e| e.to_string())?;
     }
     Ok(())
 }
@@ -124,6 +199,10 @@ fn main() {
             paste_image,
             save_content,
             save_settings,
+            set_always_on_top,
+            read_clipboard_text,
+            write_clipboard,
+            copy_image,
             open_settings,
             finish_exit
         ])
@@ -156,7 +235,24 @@ fn main() {
             let quit = MenuItem::with_id(app, "quit", "退出", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &settings, &quit])?;
             tauri::tray::TrayIconBuilder::new()
-                .icon(app.default_window_icon().expect("bundled icon").clone())
+                .icon({
+                    #[cfg(target_os = "macos")]
+                    {
+                        let rgba =
+                            image::load_from_memory(include_bytes!("../icons/tray-template.png"))?
+                                .into_rgba8();
+                        tauri::image::Image::new_owned(
+                            rgba.as_raw().clone(),
+                            rgba.width(),
+                            rgba.height(),
+                        )
+                    }
+                    #[cfg(not(target_os = "macos"))]
+                    {
+                        app.default_window_icon().expect("bundled icon").clone()
+                    }
+                })
+                .icon_as_template(cfg!(target_os = "macos"))
                 .tooltip("Nalomu Note")
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -184,6 +280,10 @@ fn main() {
         .build(tauri::generate_context!())
         .expect("启动便签失败");
     app.run(|app, event| {
+        #[cfg(target_os = "macos")]
+        if let tauri::RunEvent::Reopen { .. } = &event {
+            show(app);
+        }
         if let tauri::RunEvent::ExitRequested { code, api, .. } = event {
             if code.is_none() {
                 api.prevent_exit();

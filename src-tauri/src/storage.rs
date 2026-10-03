@@ -17,13 +17,13 @@ pub struct Settings {
 impl Default for Settings {
     fn default() -> Self {
         Self {
-            color: "#cccccc".into(),
-            background: "#333333".into(),
+            color: "#e4e5e7".into(),
+            background: "#242629".into(),
             opacity: 1.0,
             font_size: 18,
-            line_height: 1.4,
-            padding: 20,
-            text_align: "center".into(),
+            line_height: 1.65,
+            padding: 24,
+            text_align: "left".into(),
             always_on_top: true,
         }
     }
@@ -318,7 +318,7 @@ mod tests {
         let mut n = s.data.clone();
         n.settings.padding = 40;
         assert!(s.save(n).is_err());
-        assert_eq!(s.data.settings.padding, 20);
+        assert_eq!(s.data.settings.padding, Settings::default().padding);
     }
 }
 #[cfg(test)]
