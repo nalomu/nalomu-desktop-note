@@ -31,3 +31,9 @@ Windows 原生验收与安全门槛完成后，再为旧 master 提交打归档�
 ## 默认分支调整（2026-10-03）
 
 按仓库维护者要求，不等待原生验收完成，将默认分支切换为 tauri；保留 master 历史及 legacy-electron-master-20261003 归档标签。此操作不表示上列待完成验收已经通过。
+
+## v3.0 依赖组合回归（2026-10-03）
+
+Tauri 前端与 Rust 同步升级到 2.12，合并 Vue/Vite/Playwright 补丁或小版本、Vitest 5 和三个 GitHub Actions 更新。TypeScript 7 与 sha2 0.11 不兼容 PR 已关闭，不纳入此次发布。
+
+本机通过 frozen-lockfile 安装、Vue 类型检查和生产构建、3 个前端单元测试、10 个 Playwright 用例、12 个 Rust 测试及 Clippy。pnpm 审计 0 已知漏洞，Cargo 漏洞分类 0，Linux GTK 上游警告 2 项。三平台最终构建仍以汇总 PR 与合并后 CI 的结果为准。
