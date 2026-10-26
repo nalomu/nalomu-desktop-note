@@ -73,6 +73,18 @@ pub fn import_rgba(dir: &Path, width: u32, height: u32, rgba: &[u8]) -> Result<A
         image::RgbaImage::from_raw(width, height, rgba.to_vec()).ok_or("剪贴板图片数据无效")?;
     store(dir, DynamicImage::ImageRgba8(buffer))
 }
+fn attachment_name(bytes: &[u8]) -> String {
+    use std::fmt::Write as _;
+
+    // Encode the digest bytes explicitly so sha2 upgrades preserve existing IDs.
+    let mut name = String::with_capacity(68);
+    for byte in Sha256::digest(bytes).iter() {
+        write!(&mut name, "{byte:02x}").expect("writing to a String cannot fail");
+    }
+    name.push_str(".png");
+    name
+}
+
 fn store(dir: &Path, image: DynamicImage) -> Result<Attachment, String> {
     let (width, height) = (image.width(), image.height());
     dimensions(width, height)?;
@@ -84,7 +96,7 @@ fn store(dir: &Path, image: DynamicImage) -> Result<Attachment, String> {
     if bytes.len() as u64 > MAX_STORED_BYTES {
         return Err("转换后的图片过大".into());
     }
-    let name = format!("{:x}.png", Sha256::digest(&bytes));
+    let name = attachment_name(&bytes);
     let folder = dir.join("images");
     fs::create_dir_all(&folder).map_err(|e| e.to_string())?;
     let path = folder.join(&name);
@@ -124,6 +136,20 @@ pub fn read(dir: &Path, name: &str) -> Result<Vec<u8>, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn attachment_names_preserve_sha256_lowercase_hex() {
+        assert_eq!(
+            attachment_name(b""),
+            "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855.png"
+        );
+        let name = attachment_name(b"abc");
+        assert_eq!(
+            name,
+            "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad.png"
+        );
+        assert_eq!(filename(&format!("{PREFIX}{name}")), Some(name.as_str()));
+    }
+
     #[test]
     fn attachment_survives_source_removal_and_deduplicates() {
         let dir = tempfile::tempdir().unwrap();
